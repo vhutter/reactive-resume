@@ -49,6 +49,13 @@ export const configSchema = z.object({
     .default("false")
     .transform((s) => s !== "false" && s !== "0"),
 
+  // Development (Optional)
+  // When enabled, every request is auto-authenticated as the default account.
+  DEV_AUTO_LOGIN: z
+    .string()
+    .default("false")
+    .transform((s) => s !== "false" && s !== "0"),
+
   // Crowdin (Optional)
   CROWDIN_PROJECT_ID: z.coerce.number().optional(),
   CROWDIN_PERSONAL_TOKEN: z.string().optional(),

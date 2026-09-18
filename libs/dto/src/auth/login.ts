@@ -6,7 +6,8 @@ import { usernameSchema } from "../user";
 export const loginSchema = z
   .object({
     identifier: z.string(),
-    password: z.password().min(6),
+    // 5, not 6, so the default `vince` / `vince` account can be used manually.
+    password: z.password().min(5),
   })
   .refine(
     (value) => {

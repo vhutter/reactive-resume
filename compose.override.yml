@@ -1,0 +1,44 @@
+# Auto-merged by `docker compose` on top of compose.yml (-> tools/compose/simple.yml).
+# Purpose: run THIS commit (767573ce6) instead of the published :latest image,
+# and pin the sidecar images to versions contemporary with it.
+
+services:
+  minio:
+    # `latest` is a 2025 MinIO; the 2024-06 release matches this commit's era
+    # and still has the console + the bucket-policy behaviour the app expects.
+    image: quay.io/minio/minio:RELEASE.2024-06-13T22-53-53Z
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  chrome:
+    # Pin browserless v2.x from the same era as puppeteer 22 in package.json.
+    image: ghcr.io/browserless/chromium:v2.2.0
+    # The printer rewrites localhost -> host.docker.internal so the browser in
+    # this container can reach the app and minio on the host. Docker Desktop
+    # provides that name automatically; on Linux it must be mapped by hand, or
+    # every PDF export silently fails with ERR_NAME_NOT_RESOLVED.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  app:
+    # This is the whole point: build the local tree rather than pull :latest.
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    image: reactive-resume:767573ce6
+    pull_policy: build
+    environment:
+      # Skip the login page entirely and run as the default `vince` account.
+      # Set to "false" to get the normal login flow back.
+      DEV_AUTO_LOGIN: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      chrome:
+        condition: service_started

@@ -8,6 +8,7 @@ import helmet from "helmet";
 import { patchNestJsSwagger } from "nestjs-zod";
 
 import { AppModule } from "./app.module";
+import { AutoLoginMiddleware } from "./auth/auto-login.middleware";
 import { Config } from "./config/schema";
 
 patchNestJsSwagger();
@@ -20,6 +21,21 @@ async function bootstrap() {
 
   // Cookie Parser
   app.use(cookieParser());
+
+  // Auto-Login (local development only)
+  // Mounted here rather than via AppModule.configure(), because Nest applies
+  // the `api` global prefix to middleware routes -- that both hides page
+  // requests from it and rewrites `request.path` to "/" on every API call.
+  if (configService.get("DEV_AUTO_LOGIN")) {
+    const autoLogin = app.get(AutoLoginMiddleware);
+
+    app.use(autoLogin.use.bind(autoLogin));
+
+    Logger.warn(
+      "`DEV_AUTO_LOGIN` is enabled: every request is authenticated as the default account.",
+      "Bootstrap",
+    );
+  }
 
   // CORS
   app.enableCors({
